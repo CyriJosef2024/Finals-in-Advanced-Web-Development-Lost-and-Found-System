@@ -18,6 +18,12 @@ class ItemController extends BaseController
         $keyword = $this->request->getGet('keyword');
         $type = $this->request->getGet('type');
 
+        // M3 Requirement: Smart Caching
+        // Only cache the main page for 60 seconds if no search filters are applied
+        if (empty($keyword) && empty($type)) {
+            $this->cachePage(60);
+        }
+
         // 2. Fetch data using our new Model method (6 items per page)
         $result = $itemModel->getPaginatedItems($keyword, $type, 6);
 
@@ -83,5 +89,41 @@ class ItemController extends BaseController
             dd($this->request->getPost());
         }
     }
-       
+
+    // Displays the management screen (Requires correct ID and Token)
+    public function manage($id, $token)
+    {
+        $itemModel = new ItemModel();
+        $item = $itemModel->find($id);
+
+        // Security check: Does the item exist and does the token match?
+        if (!$item || $item['edit_token'] !== $token) {
+            return redirect()->to('/items')->with('errors', ['Invalid or expired management link.']);
+        }
+
+        return view('items/manage', ['item' => $item]);
+    }
+
+    // Processes the status update
+    public function update($id)
+    {
+        $itemModel = new ItemModel();
+        
+        // 1. Verify the token was passed via POST for security
+        $token = $this->request->getPost('edit_token');
+        $item = $itemModel->find($id);
+
+        if (!$item || $item['edit_token'] !== $token) {
+            return redirect()->to('/items')->with('errors', ['Unauthorized update attempt.']);
+        }
+
+        // 2. Update the status
+        $newStatus = $this->request->getPost('status');
+        if (in_array($newStatus, ['open', 'claimed', 'resolved'])) {
+            $itemModel->update($id, ['status' => $newStatus]);
+            session()->setFlashdata('success', 'Item status updated successfully.');
+        }
+
+        return redirect()->to("/items/manage/{$id}/{$token}");
+    }
 }
