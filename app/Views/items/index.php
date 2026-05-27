@@ -16,6 +16,28 @@
     </div>
 </div>
 
+<div class="card shadow-sm border-0 mb-4 bg-white">
+    <div class="card-body">
+        <form action="<?= base_url('/items') ?>" method="GET" class="row g-3 align-items-center">
+            <div class="col-md-6">
+                <input type="text" name="keyword" class="form-control form-control-lg" 
+                       placeholder="Search by item, description, or location..." 
+                       value="<?= esc($keyword ?? '', 'attr') ?>">
+            </div>
+            <div class="col-md-4">
+                <select name="type" class="form-select form-select-lg">
+                    <option value="">All Types (Lost &amp; Found)</option>
+                    <option value="lost" <?= ($type === 'lost') ? 'selected' : '' ?>>Lost Items Only</option>
+                    <option value="found" <?= ($type === 'found') ? 'selected' : '' ?>>Found Items Only</option>
+                </select>
+            </div>
+            <div class="col-md-2 text-end">
+                <button type="submit" class="btn btn-primary btn-lg w-100">Search</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="row">
     <?php if (empty($items)): ?>
         <div class="col-12 text-center py-5">
@@ -62,6 +84,12 @@
             </div>
         <?php endforeach; ?>
     <?php endif; ?>
+</div>
+
+<div class="row mt-4">
+    <div class="col d-flex justify-content-center">
+        <?= $pager->links() ?>
+    </div>
 </div>
 
 <?= $this->endSection() ?>

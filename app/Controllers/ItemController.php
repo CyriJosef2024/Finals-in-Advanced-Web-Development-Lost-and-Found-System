@@ -9,10 +9,25 @@ class ItemController extends BaseController
 {
     public function index()
     {
+        // Load helpers required for this view
+        helper(['text', 'form']);
+
         $itemModel = new ItemModel();
-        
-        // Fetch all items. (We will let Jasmin upgrade this to getPaginatedItems() later)
-        $data['items'] = $itemModel->orderBy('created_at', 'DESC')->findAll();
+
+        // 1. Grab search parameters from the URL (Search Persistence)
+        $keyword = $this->request->getGet('keyword');
+        $type = $this->request->getGet('type');
+
+        // 2. Fetch data using our new Model method (6 items per page)
+        $result = $itemModel->getPaginatedItems($keyword, $type, 6);
+
+        // 3. Pass everything to the view
+        $data = [
+            'items'   => $result['items'],
+            'pager'   => $result['pager'],
+            'keyword' => $keyword,
+            'type'    => $type
+        ];
 
         return view('items/index', $data);
     }

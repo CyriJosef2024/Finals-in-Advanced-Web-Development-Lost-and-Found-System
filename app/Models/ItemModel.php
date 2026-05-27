@@ -51,4 +51,32 @@ class ItemModel extends Model
     protected $afterFind      = [];
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
-}
+    /**
+     * Retrieves paginated and filtered items.
+     * M3 Requirement: Search Persistence & Pagination
+     */
+    public function getPaginatedItems($keyword = null, $type = null, $perPage = 6)
+    {
+        // If the user typed something in the search bar
+        if (!empty($keyword)) {
+            $this->groupStart()
+                 ->like('title', $keyword)
+                 ->orLike('description', $keyword)
+                 ->orLike('location', $keyword)
+                 ->groupEnd();
+        }
+
+        // If the user filtered by 'lost' or 'found'
+        if (!empty($type) && in_array($type, ['lost', 'found'])) {
+            $this->where('type', $type);
+        }
+
+        // Always show the newest items first
+        $this->orderBy('created_at', 'DESC');
+
+        // Return both the data array and the pagination object
+        return [
+            'items' => $this->paginate($perPage),
+            'pager' => $this->pager
+        ];
+    }}
