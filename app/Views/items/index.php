@@ -2,6 +2,13 @@
 
 <?= $this->section('content') ?>
 
+<?php if (session()->has('success')): ?>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <?= session('success') ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+<?php endif; ?>
+
 <div class="row mb-4">
     <div class="col">
         <h2 class="fw-bold">Recent Reports</h2>
@@ -19,7 +26,6 @@
             <div class="col-md-4 mb-4">
                 <div class="card h-100 shadow-sm border-0">
                     <div class="card-body">
-                        
                         <span class="badge <?= $item['type'] === 'lost' ? 'bg-danger' : 'bg-success' ?> mb-2">
                             <?= esc(strtoupper($item['type'])) ?>
                         </span>
@@ -36,8 +42,17 @@
                         <p class="card-text">
                             <?= esc(word_limiter($item['description'] ?? 'No description provided.', 15), 'html') ?>
                         </p>
-                        
+
+                        <?php if (!empty($item['photo'])): ?>
+                            <div class="mb-3">
+                                <img src="<?= base_url('image/' . esc($item['photo'], 'url')) ?>" 
+                                     alt="Item Photo" 
+                                     class="img-fluid rounded shadow-sm"
+                                     style="height: 200px; width: 100%; object-fit: cover;">
+                            </div>
+                        <?php endif; ?>
                     </div>
+                    
                     <div class="card-footer bg-white border-0 text-end pb-3">
                         <small class="text-muted d-block mb-2">
                             Posted: <?= date('M d, Y', strtotime($item['created_at'])) ?>

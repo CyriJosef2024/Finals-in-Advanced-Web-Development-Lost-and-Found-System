@@ -17,7 +17,11 @@ class ItemController extends BaseController
         return view('items/index', $data);
     }
 
-    // ... (Keep your existing create() and store() methods here) ...
+    public function create()
+    {
+        return view('items/create');
+    }
+
     public function store()
     {
         $itemModel = new ItemModel();
