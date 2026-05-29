@@ -29,10 +29,10 @@ class ItemController extends BaseController
 
         // 3. Pass everything to the view
         $data = [
-            'items'   => $result['items'],
-            'pager'   => $result['pager'],
+            'items' => $result['items'],
+            'pager' => $result['pager'],
             'keyword' => $keyword,
-            'type'    => $type
+            'type' => $type
         ];
 
         return view('items/index', $data);
@@ -49,44 +49,94 @@ class ItemController extends BaseController
 
         // 1. Map the incoming form data
         $data = [
-            'type'          => $this->request->getPost('type'),
-            'title'         => $this->request->getPost('title'),
-            'location'      => $this->request->getPost('location'),
-            'contact_name'  => $this->request->getPost('contact_name'),
+            'type' => $this->request->getPost('type'),
+            'title' => $this->request->getPost('title'),
+            'description' => $this->request->getPost('description'),
+            'location' => $this->request->getPost('location'),
+            'contact_phone' => $this->request->getPost('contact_phone'),
+            'contact_name' => $this->request->getPost('contact_name'),
             'contact_email' => $this->request->getPost('contact_email'),
-            'status'        => 'open',
+            'status' => 'open',
             // Generate a secure, random 32-character token for auth-less editing
-            'edit_token'    => bin2hex(random_bytes(16)), 
+            'edit_token' => bin2hex(random_bytes(16)),
         ];
 
         // 2. M2 Handoff: Secure File Upload (Kenneth's Domain)
         $img = $this->request->getFile('photo');
-        
+
         if ($img && $img->isValid() && !$img->hasMoved()) {
             // Generate a random filename to prevent malicious file execution masking
             $newName = $img->getRandomName();
-            
+
             // Move it strictly to the WRITEPATH (outside the public web root)
             $img->move(WRITEPATH . 'uploads', $newName);
-            
+
             // Save the hashed filename to the database
-            $data['photo'] = $newName; 
+            $data['photo'] = $newName;
         }
 
         // 3. Save to Database (This automatically triggers your Model's validation rules!)
         if ($itemModel->save($data)) {
+
             $insertId = $itemModel->getInsertID();
+
             $manageLink = base_url("items/manage/{$insertId}/{$data['edit_token']}");
-            
-            // Flash a success message containing their unique edit link
-            session()->setFlashdata('success', 'Item reported successfully! Save this link to update your post later: <br> <a href="'.$manageLink.'">'.$manageLink.'</a>');
-            
-            return redirect()->to('/items');
-        } else {
-            // If validation fails, send them back with errors and their old input
-            return redirect()->back()->withInput()->with('errors', $itemModel->errors());
-            
-            dd($this->request->getPost());
+
+            /*
+            |--------------------------------------------------------------------------
+            | SEND EMAIL (MAILTRAP)
+            |--------------------------------------------------------------------------
+            */
+
+            $email = \Config\Services::email();
+
+            $email->setTo($data['contact_email']);
+
+            $email->setFrom(
+                'noreply@campuslostfound.com',
+                'Campus Lost & Found'
+            );
+
+            $email->setSubject('Lost & Found Report Submitted');
+
+            $email->setMessage("
+        <h2>Report Submitted Successfully</h2>
+
+        <p>Hi {$data['contact_name']},</p>
+
+        <p>Your item report has been submitted.</p>
+
+        <ul>
+            <li><strong>Title:</strong> {$data['title']}</li>
+            <li><strong>Location:</strong> {$data['location']}</li>
+            <li><strong>Type:</strong> {$data['type']}</li>
+        </ul>
+
+        <p>You can manage your report here:</p>
+
+        <a href='{$manageLink}'>
+            {$manageLink}
+        </a>
+    ");
+
+            // Plain-text fallback (Professor requirement)
+            $email->setAltMessage(
+                "Your item report was submitted successfully."
+            );
+
+            // Try sending email
+            if (!$email->send()) {
+
+                log_message('error', $email->printDebugger(['headers']));
+            }
+
+            session()->setFlashdata(
+                'success',
+                'Item reported successfully! Check Mailtrap inbox for email confirmation.<br><a href="' . $manageLink . '">' . $manageLink . '</a>'
+            );
+
+            return redirect()->to(base_url('items'));
+
         }
     }
 
@@ -98,7 +148,7 @@ class ItemController extends BaseController
 
         // Security check: Does the item exist and does the token match?
         if (!$item || $item['edit_token'] !== $token) {
-            return redirect()->to('/items')->with('errors', ['Invalid or expired management link.']);
+            return redirect()->to(base_url('items'))->with('errors', ['Invalid or expired management link.']);
         }
 
         return view('items/manage', ['item' => $item]);
@@ -108,7 +158,7 @@ class ItemController extends BaseController
     public function update($id)
     {
         $itemModel = new ItemModel();
-        
+
         // 1. Verify the token was passed via POST for security
         $token = $this->request->getPost('edit_token');
         $item = $itemModel->find($id);
@@ -124,6 +174,6 @@ class ItemController extends BaseController
             session()->setFlashdata('success', 'Item status updated successfully.');
         }
 
-        return redirect()->to("/items/manage/{$id}/{$token}");
+        return redirect()->to(base_url("items/manage/{$id}/{$token}"));
     }
 }

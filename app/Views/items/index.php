@@ -20,9 +20,9 @@
     <div class="card-body">
         <form action="<?= base_url('/items') ?>" method="GET" class="row g-3 align-items-center">
             <div class="col-md-6">
-                <input type="text" name="keyword" class="form-control form-control-lg" 
-                       placeholder="Search by item, description, or location..." 
-                       value="<?= esc($keyword ?? '', 'attr') ?>">
+                <input type="text" name="keyword" class="form-control form-control-lg"
+                    placeholder="Search by item, description, or location..."
+                    value="<?= esc($keyword ?? '', 'attr') ?>">
             </div>
             <div class="col-md-4">
                 <select name="type" class="form-select form-select-lg">
@@ -51,30 +51,38 @@
                         <span class="badge <?= $item['type'] === 'lost' ? 'bg-danger' : 'bg-success' ?> mb-2">
                             <?= esc(strtoupper($item['type'])) ?>
                         </span>
-                        
+
+                        <p class="mb-2">
+                                                        <?php if ($item['status'] == 'open'): ?>
+                                <span class="badge bg-warning text-dark">OPEN</span>
+                                                        <?php elseif ($item['status'] == 'claimed'): ?>
+                                <span class="badge bg-success">CLAIMED</span>
+                                                        <?php elseif ($item['status'] == 'resolved'): ?>
+                                <span class="badge bg-primary">RESOLVED</span>
+                                                        <?php endif; ?>
+                        </p>
+
                         <h5 class="card-title fw-bold">
                             <?= esc($item['title'], 'html') ?>
                         </h5>
-                        
+
                         <p class="card-text text-muted small mb-2">
                             📍 <?= esc($item['location'], 'html') ?><br>
                             👤 <?= esc($item['contact_name'], 'html') ?>
                         </p>
-                        
+
                         <p class="card-text">
                             <?= esc(word_limiter($item['description'] ?? 'No description provided.', 15), 'html') ?>
                         </p>
 
                         <?php if (!empty($item['photo'])): ?>
                             <div class="mb-3">
-                                <img src="<?= base_url('image/' . esc($item['photo'], 'url')) ?>" 
-                                     alt="Item Photo" 
-                                     class="img-fluid rounded shadow-sm"
-                                     style="height: 200px; width: 100%; object-fit: cover;">
+                                <img src="<?= base_url('image/' . esc($item['photo'], 'url')) ?>" alt="Item Photo"
+                                    class="img-fluid rounded shadow-sm" style="height: 200px; width: 100%; object-fit: cover;">
                             </div>
                         <?php endif; ?>
                     </div>
-                    
+
                     <div class="card-footer bg-white border-0 text-end pb-3">
                         <small class="text-muted d-block mb-2">
                             Posted: <?= date('M d, Y', strtotime($item['created_at'])) ?>
